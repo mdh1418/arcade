@@ -25,6 +25,7 @@
       <_TargetPdbPath Condition="'$(DebugType)' != 'embedded'">$([System.IO.Path]::ChangeExtension($(TargetPath), '.pdb'))</_TargetPdbPath>
 
       <_SymStoreOutputDir>$(ArtifactsSymStoreDirectory)$(MSBuildProjectName)\$(TargetFramework)\</_SymStoreOutputDir>
+      <_SymStoreOutputDir Condition="'$(PlatformName)' != 'AnyCPU'">$(_SymStoreOutputDir)$(PlatformName)\</_SymStoreOutputDir>
       <_SymStorePdbPath>$(_SymStoreOutputDir)$(TargetName).pdb</_SymStorePdbPath>
       <_SymStoreAssemblyPath>$(_SymStoreOutputDir)$(TargetName)$(TargetExt)</_SymStoreAssemblyPath>
 
