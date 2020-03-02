@@ -64,6 +64,16 @@ namespace Microsoft.DotNet.ApiCompat
                 "Include both internal and public APIs if assembly contains an InternalsVisibleTo attribute. Otherwise, include only public APIs.",
                 CommandOptionType.NoValue);
 
+            // --exclude-compiler-generated is recommended if the same option was passed to GenAPI.
+            //
+            // For one thing, comparing compiler-generated attributes, especially `CompilerGeneratedAttribute` itself,
+            // on members leads to numerous false incompatibilities e.g. { get; set; } properties result in two
+            // compiler-generated methods but GenAPI produces `{ get { throw null; } set { } }` i.e. explicit methods.
+            CommandOption excludeCompilerGenerated = app.Option(
+                "--exclude-compiler-generated",
+                "Exclude APIs marked with a CompilerGenerated attribute.",
+                CommandOptionType.NoValue);
+
             app.OnExecute(() =>
             {
                 string leftOperandValue = leftOperand.HasValue() ? leftOperand.Value() : "contract";
@@ -136,6 +146,7 @@ namespace Microsoft.DotNet.ApiCompat
                             mdil.HasValue(),
                             excludeNonBrowsable.HasValue(),
                             includeInternals,
+                            excludeCompilerGenerated.HasValue(),
                             remapFile.Value(),
                             !skipGroupByAssembly.HasValue(),
                             leftOperandValue,
@@ -164,6 +175,7 @@ namespace Microsoft.DotNet.ApiCompat
             bool mdil,
             bool excludeNonBrowsable,
             bool includeInternals,
+            bool excludeCompilerGenerated,
             string remapFile,
             bool groupByAssembly,
             string leftOperand,
@@ -194,7 +206,7 @@ namespace Microsoft.DotNet.ApiCompat
                     "along with including internals -- an incompatible combination. Internal members will not be included.");
             }
 
-            var cciFilter = GetCciFilter(mdil, excludeNonBrowsable, includeInternals);
+            var cciFilter = GetCciFilter(mdil, excludeNonBrowsable, includeInternals, excludeCompilerGenerated);
             var settings = new MappingSettings
             {
                 Comparers = GetComparers(remapFile),
@@ -229,8 +241,8 @@ namespace Microsoft.DotNet.ApiCompat
         private static BaselineDifferenceFilter GetBaselineDifferenceFilter(string[] baselineFileNames)
         {
             BaselineDifferenceFilter baselineDifferenceFilter = null;
-            
-            AddFiles(baselineFileNames, (file) => 
+
+            AddFiles(baselineFileNames, (file) =>
                 (baselineDifferenceFilter ??= new BaselineDifferenceFilter(new DifferenceFilter<IncompatibleDifference>())).AddBaselineFile(file));
 
             return baselineDifferenceFilter;
@@ -304,33 +316,45 @@ namespace Microsoft.DotNet.ApiCompat
             return CciComparers.Default;
         }
 
-        private static ICciFilter GetCciFilter(bool enforcingMdilRules, bool excludeNonBrowsable, bool includeInternals)
+        private static ICciFilter GetCciFilter(
+            bool enforcingMdilRules,
+            bool excludeNonBrowsable,
+            bool includeInternals,
+            bool excludeCompilerGenerated)
         {
+            ICciFilter includeFilter;
             if (enforcingMdilRules)
             {
-                return new MdilPublicOnlyCciFilter()
+                includeFilter = new MdilPublicOnlyCciFilter()
                 {
                     IncludeForwardedTypes = true
                 };
             }
             else if (excludeNonBrowsable)
             {
-                return new PublicEditorBrowsableOnlyCciFilter()
+                includeFilter = new PublicEditorBrowsableOnlyCciFilter()
                 {
                     IncludeForwardedTypes = true
                 };
             }
             else if (includeInternals)
             {
-                return new InternalsAndPublicCciFilter();
+                includeFilter = new InternalsAndPublicCciFilter();
             }
             else
             {
-                return new PublicOnlyCciFilter()
+                includeFilter = new PublicOnlyCciFilter()
                 {
                     IncludeForwardedTypes = true
                 };
             }
+
+            if (excludeCompilerGenerated)
+            {
+                includeFilter = new IntersectionFilter(includeFilter, new ExcludeCompilerGeneratedCciFilter());
+            }
+
+            return includeFilter;
         }
 
         private static IMappingDifferenceFilter GetDiffFilter(ICciFilter filter) =>
