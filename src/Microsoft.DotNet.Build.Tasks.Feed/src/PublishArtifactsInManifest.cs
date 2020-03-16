@@ -223,6 +223,8 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                         HandleBlobPublishingAsync(client, buildAssets)
                     }
                 );
+
+                Log.LogMessage(MessageImportance.High, $"Called the asset location api {assetLocationCount} times");
             }
             catch (Exception e)
             {
@@ -725,18 +727,6 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             Dictionary<string, List<Asset>> buildAssets,
             FeedConfig feedConfig)
         {
-            foreach (var package in packagesToPublish)
-            {
-                Asset assetRecord = LookupAsset(package.Id, package.Version, buildAssets);
-                if (assetRecord == null)
-                {
-                    Log.LogError($"Asset with Id {package.Id}, Version {package.Version} isn't registered on the BAR Build with ID {BARBuildId}");
-                    continue;
-                }
-
-                await TryAddAssetLocationAsync(client, assetRecord, feedConfig, AddAssetLocationToAssetAssetLocationType.NugetFeed);
-            }
-
             await PushNugetPackagesAsync(packagesToPublish, feedConfig, maxClients: MaxClients,
                 async (feed, httpClient, package, feedAccount, feedVisibility, feedName) =>
                 {
@@ -755,7 +745,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
 
                     await Task.WhenAll(new Task[] {
                         TryAddAssetLocationAsync(client, assetRecord, feedConfig, AddAssetLocationToAssetAssetLocationType.NugetFeed),
-                        PushNugetPackageAsync(feed, httpClient, localPackagePath, package.Id, package.Version, feedAccount, feedVisibility, feedName)
+                        PushNugetPackageAsync(feed, httpClient, localPackagePath, package.Id, package.Version, feedAccount, feedVisibility, feedName),
                     });
                 });
         }
@@ -1231,21 +1221,22 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             };
 
             await Task.WhenAll(new Task[]
-            {
-                Task.WhenAll(blobsToPublish.Select(async blob =>
                 {
-                    Asset assetRecord = LookupAsset(blob.Id, buildAssets);
+                    Task.WhenAll(blobsToPublish.Select(async blob =>
+                    {
+                        Asset assetRecord = LookupAsset(blob.Id, buildAssets);
 
-                    if (assetRecord == null)
-                    {
-                        Log.LogError($"Asset with Id {blob.Id} isn't registered on the BAR Build with ID {BARBuildId}");
-                    }
-                    else
-                    {
-                        await TryAddAssetLocationAsync(client, assetRecord, feedConfig, AddAssetLocationToAssetAssetLocationType.Container);
-                    }
-                })),
-                blobFeedAction.PublishToFlatContainerAsync(blobs, maxClients: MaxClients, pushOptions)}
+                        if (assetRecord == null)
+                        {
+                            Log.LogError($"Asset with Id {blob.Id} isn't registered on the BAR Build with ID {BARBuildId}");
+                        }
+                        else
+                        {
+                            await TryAddAssetLocationAsync(client, assetRecord, feedConfig, AddAssetLocationToAssetAssetLocationType.Container);
+                        }
+                    })),
+                    blobFeedAction.PublishToFlatContainerAsync(blobs, maxClients: MaxClients, pushOptions)
+                }
             );
 
             // The latest links should be updated only after the publishing is complete, to avoid
