@@ -223,8 +223,6 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                         HandleBlobPublishingAsync(client, buildAssets)
                     }
                 );
-
-                Log.LogMessage(MessageImportance.High, $"Called the asset location api {assetLocationCount} times");
             }
             catch (Exception e)
             {
