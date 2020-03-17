@@ -127,7 +127,7 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
         /// <summary>
         /// Maximum number of parallel uploads for the upload tasks
         /// </summary>
-        public int MaxClients { get; set; } = 8;
+        public int MaxClients { get; set; } = 16;
 
         /// <summary>
         /// Directory where "nuget.exe" is installed. This will be used to publish packages.
