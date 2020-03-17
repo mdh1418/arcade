@@ -87,10 +87,10 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
         public ITaskItem[] TargetFeedConfig { get; set; }
 
         /// <summary>
-        /// Full path to the assets to publish manifest.
+        /// Full path to the assets to publish manifest(s)
         /// </summary>
         [Required]
-        public string AssetManifestPath { get; set; }
+        public ITaskItem[] AssetManifestPaths { get; set; }
 
         /// <summary>
         /// Full path to the folder containing blob assets.
@@ -177,12 +177,18 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
             {
                 Log.LogMessage(MessageImportance.High, $"Publishing artifacts in {AssetManifestPath}.");
 
-                if (string.IsNullOrWhiteSpace(AssetManifestPath) || !File.Exists(AssetManifestPath))
+                foreach (var assetManifestPath in AssetManifestPaths)
                 {
-                    Log.LogError($"Problem reading asset manifest path from '{AssetManifestPath}'");
+                    string fileName = assetManifestPath.ItemSpec;
+                    if (string.IsNullOrWhiteSpace(fileName) || !File.Exists(fileName))
+                    {
+                        Log.LogError($"Problem reading asset manifest path from '{fileName}'");
+                    }
                 }
 
-                var buildModel = BuildManifestUtil.ManifestFileToModel(AssetManifestPath, Log);
+
+                IEnumerable<BuildModel> buildModels = AssetManifestPaths.Select(
+                    assetManifestPath => BuildManifestUtil.ManifestFileToModel(assetManifestPath.ItemSpec, Log));
 
                 // Parsing the manifest may fail for several reasons
                 if (Log.HasLoggedErrors)
@@ -204,7 +210,10 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
                     return false;
                 }
 
-                SplitArtifactsInCategories(buildModel);
+                foreach (var buildModel in buildModels)
+                {
+                    SplitArtifactsInCategories(buildModel);
+                }
 
                 // Return errors from the safety checks
                 if (Log.HasLoggedErrors)
