@@ -181,10 +181,9 @@ namespace Microsoft.DotNet.Build.Tasks.Feed
         {
             try
             {
-                Log.LogMessage(MessageImportance.High, $"Publishing artifacts in {AssetManifestPath}.");
-
                 foreach (var assetManifestPath in AssetManifestPaths)
                 {
+                    Log.LogMessage(MessageImportance.High, $"Publishing artifacts in {assetManifestPath.ItemSpec}.");
                     string fileName = assetManifestPath.ItemSpec;
                     if (string.IsNullOrWhiteSpace(fileName) || !File.Exists(fileName))
                     {
