@@ -298,8 +298,15 @@
           - Installers and checksums to desired storage accounts.
     -->
     <ItemGroup Condition="'@(TargetFeedConfig)' == '' AND '$(IsStableBuild)' == 'false' AND '$(IsInternalBuild)' == 'false'">
-      <TargetFeedConfig
-        Include="Package;Symbols;OSX;Deb;Rpm;Node;BinaryLayout;Installer;Checksum;Maven;VSIX;Badge;Other"
+      <TargetFeedConfig Condition="'$(PublishInstallersAndChecksums)' == 'true'"
+        Include="Symbols"
+        TargetURL="$(TargetStaticFeed)"
+        Isolated="false"
+        Type="AzureStorageFeed"
+        Token="$(AzureStorageTargetFeedPAT)" />
+
+      <TargetFeedConfig Condition="'$(PublishInstallersAndChecksums)' != 'true'"
+        Include="Symbols;OSX;Deb;Rpm;Node;BinaryLayout;Installer;Checksum;Maven;VSIX;Badge;Other"
         TargetURL="$(TargetStaticFeed)"
         Isolated="false"
         Type="AzureStorageFeed"
