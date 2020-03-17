@@ -212,14 +212,6 @@
         Type="AzDoNugetFeed"
         Token="$(AzureDevOpsStaticTransportFeedKey)" />
 
-      <TargetFeedConfig
-        AssetSelection="NonShippingOnly"
-        Include="Symbols"
-        TargetURL="$(AzureDevOpsStaticSymbolsFeed)"
-        Isolated="false"
-        Type="AzDoNugetFeed"
-        Token="$(AzureDevOpsStaticSymbolsFeedKey)" />
-
       <!-- These feeds are marked as isolated even though they are not. We allow overwrite
            the old data with the new. -->
       <TargetFeedConfig
@@ -344,13 +336,6 @@
         Type="AzDoNugetFeed"
         Token="$(AzureDevOpsStaticTransportFeedKey)"
         AssetSelection="NonShippingOnly" />
-
-      <TargetFeedConfig
-        Include="Symbols"
-        TargetURL="$(AzureDevOpsStaticSymbolsFeed)"
-        Isolated="false"
-        Type="AzDoNugetFeed"
-        Token="$(AzureDevOpsStaticSymbolsFeedKey)" />
     </ItemGroup>
 
     <Error
