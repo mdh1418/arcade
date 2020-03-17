@@ -161,6 +161,18 @@ stages:
               SYSTEM_ACCESSTOKEN: $(System.AccessToken)
               HelixAccessToken: ''
 
+- ${{ if eq(variables._RunAsInternal, True) }}:
+  - stage: ValidateSdk
+    displayName: Validate Arcade SDK
+    dependsOn: build
+    jobs:
+    - template: /eng/validate-sdk.yml
+      parameters:
+        buildArgs: -configuration $(_BuildConfig) 
+          -prepareMachine
+          $(_InternalBuildArgs)
+          /p:Test=false
+
   - template: eng\common\templates\post-build\post-build.yml
     parameters:
       # Symbol validation isn't being very reliable lately. This should be enabled back
